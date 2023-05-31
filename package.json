@@ -1,0 +1,22 @@
+{
+  "name": "my-proxy",
+  "version": "1.0.0",
+  "description": "proxy server",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DarriusAlexander/my-proxy.git"
+  },
+  "author": "fullstackdah",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DarriusAlexander/my-proxy/issues"
+  },
+  "homepage": "https://github.com/DarriusAlexander/my-proxy#readme",
+  "dependencies": {
+    "axios": "^1.4.0"
+  }
+}

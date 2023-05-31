@@ -1,54 +1,41 @@
-// Import axios
-const axios = require("axios");
+// Require axios module
+const axios = require('axios');
 
-// Create an axios instance with the base URL of etherscan API
-const etherscan = axios.create({
-  baseURL: "https://api.etherscan.io/api",
-});
+// Define API endpoints
+const ethUrl = "https://api.etherscan.io/api?module=account&action=balance&address=${request.query.address}&tag=latest&apikey=${process.env.3BG8AYUPAAQKZDVIZVBGGVENB49D84NDMA}";
+const rateUrl = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd";
 
-// Export a default function that takes req and res as parameters
-export default async function handler(req, res) {
-  try {
-    // Get the wallet address from the req.query parameter
-    const address = req.query.address;
-
-    // Use axios to make a GET request to the etherscan API with the wallet address and your API key
-    const response = await etherscan.get("", {
-      params: {
-        module: "account",
-        action: "balance",
-        address: address,
-        tag: "latest",
-        apikey: "3BG8AYUPAAQKZDVIZVBGGVENB49D84NDMA", // replace with your own API key
-      },
-    });
-
-    // Parse the response data as JSON and get the balance property
+// Make a GET request to the etherscan endpoint
+axios.get(ethUrl)
+  .then(response => {
+    // Parse the response data
     const data = response.data;
-    const balance = data.result;
-
-    // Convert the balance from wei to ether using web3.fromWei or a custom function
-    // For example, using web3.fromWei:
-    // const web3 = require("web3");
-    // const ether = web3.fromWei(balance, "ether");
-    // Or using a custom function:
-    const ether = weiToEther(balance);
-
-    // Send the balance as a response with res.json
-    res.json({ balance: ether });
-  } catch (error) {
-    // Handle any errors and send an appropriate response
+    // Check if the request was successful
+    if (data.status === '1') {
+      // Make another GET request to the coingecko endpoint
+      axios.get(rateUrl)
+        .then(rateResponse => {
+          // Parse the rate response data
+          const rateData = rateResponse.data;
+          // Get the ETH to USD exchange rate
+          const rate = rateData.ethereum.usd;
+          // Convert the balance from wei to ETH and multiply by the rate
+          const balance = data.result / 1e18 * rate;
+          // Return the balance as a JSON response
+          response.status(200).json({
+            balance: `${balance.toFixed(2)} USD`
+          });
+        })
+        .catch(error => {
+          // Log the error
+          console.error(error);
+        });
+    } else {
+      // Log the error message
+      console.error(data.message);
+    }
+  })
+  .catch(error => {
+    // Log the error
     console.error(error);
-    res.status(500).json({ error: error.message });
-  }
-}
-
-// A custom function to convert wei to ether
-function weiToEther(wei) {
-  // One ether is 10^18 wei
-  const divisor = 10 ** 18;
-  // Convert wei to a number and divide by divisor
-  const ether = Number(wei) / divisor;
-  // Return ether as a string
-  return ether.toString();
-}
+  });
