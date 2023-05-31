@@ -1,41 +1,53 @@
-// Require axios module
+// Require axios and etherscan API
 const axios = require('axios');
+const etherscan = require('etherscan-api').init('3BG8AYUPAAQKZDVIZVBGGVENB49D84NDMA');
 
-// Define API endpoints
-const ethUrl = "https://api.etherscan.io/api?module=account&action=balance&address=${request.query.address}&tag=latest&apikey=${process.env.3BG8AYUPAAQKZDVIZVBGGVENB49D84NDMA}";
-const rateUrl = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd";
+// Define a function that takes a wallet address as a parameter and returns a promise with the ETH balance
+function getEthBalance(address) {
+  return etherscan.account.balance(address)
+    .then(result => {
+      // Convert the balance from wei to ether and return it
+      return etherscan.utils.convertWeiToEther(result.result);
+    })
+    .catch(error => {
+      // Handle any errors and return null
+      console.error(error);
+      return null;
+    });
+}
 
-// Make a GET request to the etherscan endpoint
-axios.get(ethUrl)
-  .then(response => {
-    // Parse the response data
-    const data = response.data;
-    // Check if the request was successful
-    if (data.status === '1') {
-      // Make another GET request to the coingecko endpoint
-      axios.get(rateUrl)
-        .then(rateResponse => {
-          // Parse the rate response data
-          const rateData = rateResponse.data;
-          // Get the ETH to USD exchange rate
-          const rate = rateData.ethereum.usd;
-          // Convert the balance from wei to ETH and multiply by the rate
-          const balance = data.result / 1e18 * rate;
-          // Return the balance as a JSON response
-          response.status(200).json({
-            balance: `${balance.toFixed(2)} USD`
-          });
-        })
-        .catch(error => {
-          // Log the error
-          console.error(error);
-        });
-    } else {
-      // Log the error message
-      console.error(data.message);
-    }
-  })
-  .catch(error => {
-    // Log the error
-    console.error(error);
+// Define a function that listens for a call with a wallet address and responds with the ETH balance
+function listenForCall() {
+  // Use axios to create a server instance
+  const server = axios.create({
+    baseURL: 'http://localhost:3000',
+    timeout: 1000
   });
+
+  // Use server.get to listen for requests on the /balance endpoint
+  server.get('/balance', async (req, res) => {
+    // Get the wallet address from the query parameters
+    const address = req.query.address;
+
+    // Validate the address format
+    if (!etherscan.utils.isAddress(address)) {
+      // If the address is invalid, send a 400 error response
+      res.status(400).send('Invalid address format');
+    } else {
+      // If the address is valid, get the ETH balance using the getEthBalance function
+      const balance = await getEthBalance(address);
+
+      // Check if the balance is null
+      if (balance === null) {
+        // If the balance is null, send a 500 error response
+        res.status(500).send('Could not get balance');
+      } else {
+        // If the balance is not null, send a 200 success response with the balance
+        res.status(200).send(`The ETH balance of ${address} is ${balance}`);
+      }
+    }
+  });
+}
+
+// Call the listenForCall function to start listening for calls
+listenForCall();
