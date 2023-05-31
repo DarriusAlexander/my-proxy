@@ -20,14 +20,14 @@ function getEthBalance(address) {
 function listenForCall() {
   // Use axios to create a server instance
   const server = axios.create({
-    baseURL: 'http://localhost:3000',
+    baseURL: 'https://my-proxy-nine.vercel.app/api/balance',
     timeout: 1000
   });
 
   // Use server.get to listen for requests on the /balance endpoint
   server.get('/balance', async (req, res) => {
     // Get the wallet address from the query parameters
-    const address = req.query.address;
+    const address = "0xF12E70Eb5bd116461907d8C451636a9AA90DD0C2";
 
     // Validate the address format
     if (!etherscan.utils.isAddress(address)) {
