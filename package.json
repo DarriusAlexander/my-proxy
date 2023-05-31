@@ -4,7 +4,7 @@
   "description": "proxy server",
   "main": "index.js",
   "scripts": {
-    "test": "node index.js"
+    "test": "vercel dev"
   },
   "repository": {
     "type": "git",
